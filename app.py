@@ -55,8 +55,19 @@ def save_cache(cache_data):
     with open(CACHE_FILE, "w") as f:
         json.dump(cache_data, f)
 
-def parse_tickers(text_input, uploaded_file):
+def parse_tickers(text_input, uploaded_file, use_default=False):
     tickers = set()
+    
+    if use_default:
+        try:
+            with open("us_tickers_2026-06-15.json", "r") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    for item in data:
+                        tickers.add(str(item).strip().upper())
+        except Exception as e:
+            st.error(f"Error loading default tickers: {e}")
+
     if text_input:
         for t in text_input.replace(',', ' ').split():
             t = t.strip().upper()
@@ -212,13 +223,14 @@ def main():
         
         st.markdown("---")
         st.header("📥 Input Tickers")
-        text_input = st.text_area("Paste comma-separated tickers", "AAPL, MSFT, TSLA, NVDA, GME, AMC")
+        use_default = st.checkbox("Scan all US Tickers (Default File)", value=True)
+        text_input = st.text_area("Or paste comma-separated tickers (optional)", "")
         uploaded_file = st.file_uploader("Or upload a CSV/TXT/JSON file", type=['csv', 'txt', 'json'])
         
         start_scan = st.button("🚀 Start Scan", use_container_width=True)
 
     if start_scan:
-        tickers = parse_tickers(text_input, uploaded_file)
+        tickers = parse_tickers(text_input, uploaded_file, use_default)
         if not tickers:
             st.warning("Please provide at least one valid ticker symbol.")
             return
